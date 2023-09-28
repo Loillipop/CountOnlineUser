@@ -22,6 +22,14 @@ public class UserOnline {
         return endSession;
     }
 
+    @Override
+    public String toString() {
+        return "UserOnline{" +
+                "startSession=" + startSession +
+                ", endSession=" + endSession +
+                '}';
+    }
+
     public void setEndSession(LocalDate endSession) {
         this.endSession = endSession;
     }
