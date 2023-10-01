@@ -1,7 +1,4 @@
 import com.packag.UserOnline;
-import com.sun.source.tree.Tree;
-
-import java.sql.Array;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.temporal.ChronoUnit;
@@ -16,9 +13,9 @@ public class Main {
     public static void main(String[] args) {
         Main main = new Main();
         System.out.println("Максимальное количество задротов онлайн");
-//        System.out.println(main.findMaxOnline());
+        System.out.println(main.findMaxOnline());
         System.out.println("Первая дата с самым большим количеством онлайна");
-//        System.out.println(main.findMaxOnlineDateSimple());
+        System.out.println(main.findMaxOnlineDateSimple());
         System.out.println("Период с самым большим количеством онлайна");
         System.out.println(main.findMaxOnlineDateHard());
     }
@@ -151,11 +148,10 @@ public class Main {
                 .sorted((o1, o2) -> countDayInterval(o2.getStartSession(), o1.getStartSession()))
                 .toList();
         HashMap<LocalDate, Integer> staticHashMap = fillHashMap(onlineList);
-        Integer maxUsers = Stream.of(staticHashMap.values())
+        return Stream.of(staticHashMap.values())
                 .map(e -> e.stream().max(Comparator.comparingInt(Integer::intValue))
-                        .get()).findFirst()
+                .get()).findFirst()
                 .get();
-        return maxUsers;
     }
 
     public LocalDate findMaxOnlineDateSimple() {
@@ -197,7 +193,6 @@ public class Main {
                 .limit(i)
                 .sorted((o1, o2) -> countDayInterval(o2.getStartSession(), o1.getStartSession()))
                 .toList();
-        ;
         List<UserOnline> onlineListAsc = onlineList
                 .stream()
                 .sorted((o1, o2) -> countDayInterval(o2.getEndSession(), o1.getEndSession()))
