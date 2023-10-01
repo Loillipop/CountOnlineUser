@@ -1,13 +1,11 @@
 import com.packag.UserOnline;
+import com.sun.source.tree.Tree;
 
-import java.text.CollationElementIterator;
+import java.sql.Array;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalField;
 import java.util.*;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Main {
@@ -17,8 +15,11 @@ public class Main {
 
     public static void main(String[] args) {
         Main main = new Main();
-        System.out.println(main.findMaxOnline());
-        System.out.println(main.findMaxOnlineDateSimple());
+        System.out.println("Максимальное количество задротов онлайн");
+//        System.out.println(main.findMaxOnline());
+        System.out.println("Первая дата с самым большим количеством онлайна");
+//        System.out.println(main.findMaxOnlineDateSimple());
+        System.out.println("Период с самым большим количеством онлайна");
         System.out.println(main.findMaxOnlineDateHard());
     }
 
@@ -33,65 +34,111 @@ public class Main {
     public static HashMap<LocalDate, Integer> fillHashMap(List<UserOnline> onlineList) {
         HashMap<LocalDate, Integer> staticHashMap = new HashMap<>();
         for (UserOnline list : onlineList) {
-            for (LocalDate i = list.getStartSession(); i.isBefore(list.getEndSession()); i = addOneDayToLocaDate(i)) {
+            for (LocalDate i = list.getStartSession(); i.isBefore(list.getEndSession()); i = i.plusDays(1)) {
                 updateValue(staticHashMap, i, 1);
             }
         }
         return staticHashMap;
     }
 
-    public static SortedMap<LocalDate, Integer> fillValuesHard(List<UserOnline> onlineList, LocalDate startDate, int days) {
-        SortedMap<LocalDate, Integer> staticSortedMap = fiilByZerOMap(startDate, days);
+    public static SortedMap<LocalDate, Integer> fillHashMap(List<UserOnline> onlineList, LocalDate startDate, int days) {
+        SortedMap<LocalDate, Integer> statisticMap = fiilByZerOMap(startDate, days);
         for (UserOnline list : onlineList) {
-            for (LocalDate i = list.getStartSession(); i.isBefore(list.getEndSession()); i = addOneDayToLocaDate(i)) {
-                updateValue(staticSortedMap, i, 1);
+            for (LocalDate i = list.getStartSession(); i.isBefore(list.getEndSession()); i = i.plusDays(1)) {
+                updateValue(statisticMap, i, 1);
             }
         }
-        return staticSortedMap;
+        return statisticMap;
     }
+
 
     public static int countDayInterval(LocalDate date1, LocalDate date2) {
         return Math.toIntExact(ChronoUnit.DAYS.between(date1, date2));
     }
 
-    public static LocalDate addOneDayToLocaDate(LocalDate date) {
-        return date.plusDays(1);
-    }
-
-    public static TreeMap<LocalDate, Integer> fiilByZerOMap(LocalDate start, int days) {
-        TreeMap<LocalDate, Integer> staticTreeMap = new TreeMap<>();
+    public static SortedMap<LocalDate, Integer> fiilByZerOMap(LocalDate start, int days) {
+        SortedMap<LocalDate, Integer> staticTreeMap = new TreeMap<>() {
+        };
         long i = 0;
         while (i < days) {
-            staticTreeMap.put(addOneDayToLocaDate(start), 0);
+            staticTreeMap.put(start.plusDays(1), 0);
             i++;
         }
         return staticTreeMap;
     }
 
-    public static String splitListtoMaxUsers(List<LocalDate> finalDateMaxUser, List<UserOnline> onlineListDesc, Integer maxUsers) {
-        if (maxUsers == 1 || finalDateMaxUser.size() == 1) {
-            return "Количество пользователей всегда:" + maxUsers + ". Пересечений нет";
-        } else if (finalDateMaxUser.size() == 2) {
-            if (finalDateMaxUser.get(1).isEqual(addOneDayToLocaDate(finalDateMaxUser.get(0)))) {
-                return finalDateMaxUser.get(0) + " - " + finalDateMaxUser.get(1) + " --> " + 2;
-            } else return finalDateMaxUser.get(0) + " --> " + 2;
-        } else {
-            LinkedList<LocalDate> finList = new LinkedList<>();
-            LinkedList<LocalDate> tempList = new LinkedList<>();
-            for (int j = 1; j < finalDateMaxUser.size() - 1; j++) {
-                if (finalDateMaxUser.get(j).isEqual(addOneDayToLocaDate(finalDateMaxUser.get(j - 1)))) {
-                    if (j == 1) {
-                        tempList.add(finalDateMaxUser.get(j - 1));
-                    }
-                    tempList.add(finalDateMaxUser.get(j));
+    public static List<LocalDate> countMaxPeriod(List<LocalDate> finalDateMaxUser) {
+        List<LocalDate> tempList = new ArrayList<>();
+        List<LocalDate> finallist = new ArrayList<>();
+        int count = 0;
+        for (int i = 0; i < finalDateMaxUser.size() - 1; i++) {
+            if (finalDateMaxUser.get(i).plusDays(1).isEqual(finalDateMaxUser.get(++i))) {
+                if (count == 0) {
+                    tempList.add(finalDateMaxUser.get(i - 1));
+                    tempList.add(finalDateMaxUser.get(i));
+                    count += 2;
+                    i--;
                 } else {
-                    finList.clear();
-                    tempList.addAll(finList);
-                    tempList.clear();
+                    tempList.add(finalDateMaxUser.get(i));
+                    count += 1;
+                    i--;
+                }
+            } else {
+                if (tempList.isEmpty()) {
+                    count = 0;
+                    --i;
+                } else {
+                    if (tempList.size() < finalDateMaxUser.size() - tempList.size()) {
+                        if (finallist.isEmpty()) {
+                            finallist.addAll(tempList);
+                            tempList.clear();
+                            count = 0;
+                            --i;
+                        } else if (finallist.size() < tempList.size()) {
+                            finallist.clear();
+                            finallist.addAll(tempList);
+                            tempList.clear();
+                            count = 0;
+                            --i;
+                        } else if (finallist.size() == tempList.size()) {
+                            tempList.clear();
+                            count = 0;
+                            --i;
+                        } else {
+                            tempList.clear();
+                            count = 0;
+                            --i;
+                        }
+                    } else if (tempList.size() >= finalDateMaxUser.size() - tempList.size()) {
+                        break;
+                    }
                 }
             }
-            finList.addAll(tempList);
-            return finList.get(0) + " - " + finList.get(finList.size() - 1) + "--> " + maxUsers;
+        }
+        System.out.println(tempList);
+        System.out.println(finallist);
+        if (tempList.isEmpty() && finallist.isEmpty()) {
+            tempList.add(finalDateMaxUser.get(0));
+            return tempList;
+        } else if (finallist.size() >= tempList.size()) {
+            return finallist;
+        } else return tempList;
+    }
+
+    public static String splitListtoMaxUsersPEriod(List<LocalDate> finalDateMaxUser, Integer maxUsers) {
+        if (maxUsers == 1) {
+            return finalDateMaxUser.get(0) + " - " + finalDateMaxUser.get(1) + " --> " + maxUsers;
+        } else if (finalDateMaxUser.size() == 1) {
+            return finalDateMaxUser.get(0) + " --> " + maxUsers;
+        } else if (finalDateMaxUser.size() == 2) {
+            if (finalDateMaxUser.get(0).plusDays(1).isEqual(finalDateMaxUser.get(1))) {
+                return finalDateMaxUser.get(0) + " - " + finalDateMaxUser.get(1) + " --> " + maxUsers;
+            } else return finalDateMaxUser.get(0) + " --> " + maxUsers;
+        } else {
+            List<LocalDate> finalList = countMaxPeriod(finalDateMaxUser);
+            if (finalList.size() == 1) {
+                return finalList.get(0) + "--> " + maxUsers;
+            } else return finalList.get(0) + " - " + finalList.get(finalList.size() - 1) + "--> " + maxUsers;
         }
     }
 
@@ -108,9 +155,6 @@ public class Main {
                 .map(e -> e.stream().max(Comparator.comparingInt(Integer::intValue))
                         .get()).findFirst()
                 .get();
-        System.out.println(onlineList);
-        System.out.println(staticHashMap);
-        System.out.println(maxUsers);
         return maxUsers;
     }
 
@@ -137,8 +181,6 @@ public class Main {
                         .get()))
                 .map(Map.Entry::getKey).min((d1, d2) -> countDayInterval(d2, d1))
                 .get();
-        System.out.println(onlineList);
-        System.out.println(staticHashMap);
         System.out.println(finalDateMaxUser);
         return finalDateMaxUser;
     }
@@ -150,31 +192,31 @@ public class Main {
         // (то есть к примеру дата начала самого большого онлайна 05.05.2023, дата завершения 10.07.2023)
 
         Random random = new Random();
-        int i = random.nextInt(2, 3);
+        int i = random.nextInt(1000, 2000);
         List<UserOnline> onlineList = Stream.generate(Main::generateUser)
-                .limit(i).toList();
-        List<UserOnline> onlineListDesc = onlineList
-                .stream()
+                .limit(i)
                 .sorted((o1, o2) -> countDayInterval(o2.getStartSession(), o1.getStartSession()))
                 .toList();
+        ;
         List<UserOnline> onlineListAsc = onlineList
                 .stream()
                 .sorted((o1, o2) -> countDayInterval(o2.getEndSession(), o1.getEndSession()))
                 .toList();
-        LocalDate startDate = onlineListDesc.get(0).getStartSession();
+        LocalDate startDate = onlineList.get(0).getStartSession();
         LocalDate endDate = onlineListAsc.get(onlineListAsc.size() - 1).getEndSession();
         int days = countDayInterval(startDate, endDate);
-        SortedMap<LocalDate, Integer> staticSortedMap = fillValuesHard(onlineListDesc, startDate, days);
-        Integer maxUsers = Stream.of(staticSortedMap.values())
+        SortedMap<LocalDate, Integer> sortedMap = fillHashMap(onlineList, startDate, days);
+        Integer maxUsers = Stream.of(sortedMap.values())
                 .map(e -> e.stream().max(Comparator.comparingInt(Integer::intValue))
                         .get()).findFirst()
                 .get();
-        System.out.println(maxUsers);
-        List<LocalDate> finalDateMaxUser = Stream.of(staticSortedMap.entrySet())
+        List<LocalDate> finalDateMaxUser = Stream.of(sortedMap.entrySet())
                 .flatMap(Collection::stream)
-                .filter(v -> v.getValue().equals(maxUsers)).map(Map.Entry::getKey).sorted((d1, d2) -> countDayInterval(d2, d1)).toList();
+                .filter(v -> v.getValue().equals(maxUsers))
+                .map(Map.Entry::getKey)
+                .toList();
         System.out.println(finalDateMaxUser);
-        return splitListtoMaxUsers(finalDateMaxUser, onlineListDesc, maxUsers);
+        return splitListtoMaxUsersPEriod(finalDateMaxUser, maxUsers);
     }
 
 
