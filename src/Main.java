@@ -1,4 +1,5 @@
 import com.packag.UserOnline;
+
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.temporal.ChronoUnit;
@@ -14,9 +15,9 @@ public class Main {
         Main main = new Main();
         System.out.println("Максимальное количество задротов онлайн");
         System.out.println(main.findMaxOnline());
-        System.out.println("Первая дата с самым большим количеством онлайна");
+        System.out.println("Первая дата с самым большим количеством задротов онлайна");
         System.out.println(main.findMaxOnlineDateSimple());
-        System.out.println("Период с самым большим количеством онлайна");
+        System.out.println("Период с самым большим количеством задротов онлайна");
         System.out.println(main.findMaxOnlineDateHard());
     }
 
@@ -112,8 +113,6 @@ public class Main {
                 }
             }
         }
-        System.out.println(tempList);
-        System.out.println(finallist);
         if (tempList.isEmpty() && finallist.isEmpty()) {
             tempList.add(finalDateMaxUser.get(0));
             return tempList;
@@ -150,7 +149,7 @@ public class Main {
         HashMap<LocalDate, Integer> staticHashMap = fillHashMap(onlineList);
         return Stream.of(staticHashMap.values())
                 .map(e -> e.stream().max(Comparator.comparingInt(Integer::intValue))
-                .get()).findFirst()
+                        .get()).findFirst()
                 .get();
     }
 
@@ -168,16 +167,15 @@ public class Main {
                 .toList();
 
         HashMap<LocalDate, Integer> staticHashMap = fillHashMap(onlineList);
-        System.out.println(staticHashMap);
         LocalDate finalDateMaxUser = Stream.of(staticHashMap.entrySet())
                 .flatMap(Collection::stream)
                 .filter(v -> v.getValue().equals(Stream.of(staticHashMap.values())
-                        .map(e -> e.stream().max(Comparator.comparingInt(Integer::intValue))
-                                .get()).findFirst()
-                        .get()))
+                .map(e -> e.stream().max(Comparator.comparingInt(Integer::intValue))
+                .get()).findFirst()
+                .get()))
                 .map(Map.Entry::getKey).min((d1, d2) -> countDayInterval(d2, d1))
                 .get();
-        System.out.println(finalDateMaxUser);
+
         return finalDateMaxUser;
     }
 
@@ -197,23 +195,24 @@ public class Main {
                 .stream()
                 .sorted((o1, o2) -> countDayInterval(o2.getEndSession(), o1.getEndSession()))
                 .toList();
+
         LocalDate startDate = onlineList.get(0).getStartSession();
         LocalDate endDate = onlineListAsc.get(onlineListAsc.size() - 1).getEndSession();
         int days = countDayInterval(startDate, endDate);
+
         SortedMap<LocalDate, Integer> sortedMap = fillHashMap(onlineList, startDate, days);
         Integer maxUsers = Stream.of(sortedMap.values())
                 .map(e -> e.stream().max(Comparator.comparingInt(Integer::intValue))
-                        .get()).findFirst()
+                .get()).findFirst()
                 .get();
         List<LocalDate> finalDateMaxUser = Stream.of(sortedMap.entrySet())
                 .flatMap(Collection::stream)
                 .filter(v -> v.getValue().equals(maxUsers))
                 .map(Map.Entry::getKey)
                 .toList();
-        System.out.println(finalDateMaxUser);
+
         return splitListtoMaxUsersPEriod(finalDateMaxUser, maxUsers);
     }
-
 
     public static UserOnline generateUser() {
         Random random = new Random();
@@ -233,7 +232,6 @@ public class Main {
             startUserOnline = endUserOnline;
             endUserOnline = temp;
         }
-
         return new UserOnline(startUserOnline, endUserOnline);
     }
 }
