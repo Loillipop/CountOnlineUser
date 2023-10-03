@@ -13,15 +13,27 @@ public class Main {
 
     public static void main(String[] args) {
         Main main = new Main();
+        List<UserOnline> onlineList = main.getSortedOnlineList();
+        System.out.println(onlineList);
+        int maxOnline = main.findMaxOnline(onlineList);
         System.out.println("Максимальное количество задротов онлайн");
-        System.out.println(main.findMaxOnline());
+        System.out.println(maxOnline);
         System.out.println("Первая дата с самым большим количеством задротов онлайна");
-        System.out.println(main.findMaxOnlineDateSimple());
+        System.out.println(main.findMaxOnlineDateSimple(onlineList) + " -> " + maxOnline);
         System.out.println("Период с самым большим количеством задротов онлайна");
-        System.out.println(main.findMaxOnlineDateHard());
+        System.out.println(main.findMaxOnlineDateHard(onlineList, maxOnline) + " -> " + maxOnline);
     }
 
-    public static void updateValue(Map<LocalDate, Integer> map, LocalDate key, Integer value) {
+    private List<UserOnline> getSortedOnlineList() {
+        Random random = new Random();
+        int i = random.nextInt(4, 10);
+
+        return Stream.generate(Main::generateUser).
+                limit(i).sorted((o1, o2) -> countDayInterval(o2.getStartSession(), o1.getStartSession()))
+                .toList();
+    }
+
+    private void updateValue(Map<LocalDate, Integer> map, LocalDate key, Integer value) {
         if (map.containsKey(key)) {
             map.put(key, map.get(key) + 1);
         } else {
@@ -29,7 +41,7 @@ public class Main {
         }
     }
 
-    public static HashMap<LocalDate, Integer> fillHashMap(List<UserOnline> onlineList) {
+    private HashMap<LocalDate, Integer> fillHashMap(List<UserOnline> onlineList) {
         HashMap<LocalDate, Integer> staticHashMap = new HashMap<>();
         for (UserOnline list : onlineList) {
             for (LocalDate i = list.getStartSession(); i.isBefore(list.getEndSession()); i = i.plusDays(1)) {
@@ -38,8 +50,8 @@ public class Main {
         }
         return staticHashMap;
     }
-    @Override
-    public static SortedMap<LocalDate, Integer> fillHashMap(List<UserOnline> onlineList, LocalDate startDate, int days) {
+
+    private SortedMap<LocalDate, Integer> fillHashMap(List<UserOnline> onlineList, LocalDate startDate, int days) {
         SortedMap<LocalDate, Integer> statisticMap = fiilByZerOMap(startDate, days);
         for (UserOnline list : onlineList) {
             for (LocalDate i = list.getStartSession(); i.isBefore(list.getEndSession()); i = i.plusDays(1)) {
@@ -49,12 +61,11 @@ public class Main {
         return statisticMap;
     }
 
-
-    public static int countDayInterval(LocalDate date1, LocalDate date2) {
+    private  int countDayInterval(LocalDate date1, LocalDate date2) {
         return Math.toIntExact(ChronoUnit.DAYS.between(date1, date2));
     }
 
-    public static SortedMap<LocalDate, Integer> fiilByZerOMap(LocalDate start, int days) {
+    private SortedMap<LocalDate, Integer> fiilByZerOMap(LocalDate start, int days) {
         SortedMap<LocalDate, Integer> staticTreeMap = new TreeMap<>() {
         };
         long i = 0;
@@ -65,7 +76,7 @@ public class Main {
         return staticTreeMap;
     }
 
-    public static List<LocalDate> countMaxPeriod(List<LocalDate> finalDateMaxUser) {
+    private List<LocalDate> countMaxPeriod(List<LocalDate> finalDateMaxUser) {
         List<LocalDate> tempList = new ArrayList<>();
         List<LocalDate> finallist = new ArrayList<>();
         int count = 0;
@@ -75,42 +86,28 @@ public class Main {
                     tempList.add(finalDateMaxUser.get(i - 1));
                     tempList.add(finalDateMaxUser.get(i));
                     count += 2;
-                    i--;
                 } else {
                     tempList.add(finalDateMaxUser.get(i));
                     count += 1;
-                    i--;
                 }
+                i--;
             } else {
-                if (tempList.isEmpty()) {
-                    count = 0;
-                    --i;
-                } else {
-                    if (tempList.size() < finalDateMaxUser.size() - tempList.size()) {
-                        if (finallist.isEmpty()) {
-                            finallist.addAll(tempList);
-                            tempList.clear();
-                            count = 0;
-                            --i;
-                        } else if (finallist.size() < tempList.size()) {
-                            finallist.clear();
-                            finallist.addAll(tempList);
-                            tempList.clear();
-                            count = 0;
-                            --i;
-                        } else if (finallist.size() == tempList.size()) {
-                            tempList.clear();
-                            count = 0;
-                            --i;
-                        } else {
-                            tempList.clear();
-                            count = 0;
-                            --i;
-                        }
-                    } else if (tempList.size() >= finalDateMaxUser.size() - tempList.size()) {
-                        break;
-                    }
+                if (tempList.size() < finalDateMaxUser.size() - tempList.size()) {
+                    if (finallist.isEmpty()) {
+                        finallist.addAll(tempList);
+                        tempList.clear();
+                    } else if (finallist.size() < tempList.size()) {
+                        finallist.clear();
+                        finallist.addAll(tempList);
+                        tempList.clear();
+                    } else if (finallist.size() == tempList.size()) {
+                        tempList.clear();
+                    } else tempList.clear();
+                } else if (tempList.size() >= finalDateMaxUser.size() - tempList.size()) {
+                    break;
                 }
+                count = 0;
+                --i;
             }
         }
         if (tempList.isEmpty() && finallist.isEmpty()) {
@@ -121,31 +118,24 @@ public class Main {
         } else return tempList;
     }
 
-    public static String splitListtoMaxUsersPEriod(List<LocalDate> finalDateMaxUser, Integer maxUsers) {
-        if (maxUsers == 1) {
-            return finalDateMaxUser.get(0) + " - " + finalDateMaxUser.get(1) + " --> " + maxUsers;
-        } else if (finalDateMaxUser.size() == 1) {
-            return finalDateMaxUser.get(0) + " --> " + maxUsers;
+    private List<LocalDate> splitListtoMaxUsersPEriod(List<LocalDate> finalDateMaxUser) {
+
+        if (finalDateMaxUser.size() == 1) {
+            return finalDateMaxUser.stream().limit(1).toList();
         } else if (finalDateMaxUser.size() == 2) {
             if (finalDateMaxUser.get(0).plusDays(1).isEqual(finalDateMaxUser.get(1))) {
-                return finalDateMaxUser.get(0) + " - " + finalDateMaxUser.get(1) + " --> " + maxUsers;
-            } else return finalDateMaxUser.get(0) + " --> " + maxUsers;
+                return finalDateMaxUser.stream().limit(2).toList();
+            } else return finalDateMaxUser.stream().limit(1).toList();
         } else {
-            List<LocalDate> finalList = countMaxPeriod(finalDateMaxUser);
-            if (finalList.size() == 1) {
-                return finalList.get(0) + "--> " + maxUsers;
-            } else return finalList.get(0) + " - " + finalList.get(finalList.size() - 1) + "--> " + maxUsers;
+            List<LocalDate> temp = countMaxPeriod(finalDateMaxUser);
+            if (temp.size() == 1) {
+                return temp.stream().limit(1).toList();
+            } else return temp;
         }
     }
 
-    public int findMaxOnline() {
+    public int findMaxOnline(List<UserOnline> onlineList) {
         // Найти самое большое количество онлайна одновременно
-        Random random = new Random();
-        int i = random.nextInt(1000, 1200);
-        List<UserOnline> onlineList = Stream.generate(Main::generateUser)
-                .limit(i)
-                .sorted((o1, o2) -> countDayInterval(o2.getStartSession(), o1.getStartSession()))
-                .toList();
         HashMap<LocalDate, Integer> staticHashMap = fillHashMap(onlineList);
         return Stream.of(staticHashMap.values())
                 .map(e -> e.stream().max(Comparator.comparingInt(Integer::intValue))
@@ -153,44 +143,23 @@ public class Main {
                 .get();
     }
 
-    public LocalDate findMaxOnlineDateSimple() {
-
-        // Найти дату самого большого онлайна(первый день в диапазоне, когда было одновременно онлайн самое большое кол-во людей)
-        // Более сложный вариант, это найти диапазон дат наибольшего онлайна
-        // (то есть к примеру дата начала самого большого онлайна 05.05.2023, дата завершения 10.07.2023)
-
-        Random random = new Random();
-        int i = random.nextInt(1000, 1200);
-        List<UserOnline> onlineList = Stream.generate(Main::generateUser)
-                .limit(i)
-                .sorted((o1, o2) -> countDayInterval(o2.getStartSession(), o1.getStartSession()))
-                .toList();
+    public LocalDate findMaxOnlineDateSimple(List<UserOnline> onlineList) {
 
         HashMap<LocalDate, Integer> staticHashMap = fillHashMap(onlineList);
         LocalDate finalDateMaxUser = Stream.of(staticHashMap.entrySet())
                 .flatMap(Collection::stream)
                 .filter(v -> v.getValue().equals(Stream.of(staticHashMap.values())
-                .map(e -> e.stream().max(Comparator.comparingInt(Integer::intValue))
-                .get()).findFirst()
-                .get()))
+                        .map(e -> e.stream().max(Comparator.comparingInt(Integer::intValue))
+                                .get()).findFirst()
+                        .get()))
                 .map(Map.Entry::getKey).min((d1, d2) -> countDayInterval(d2, d1))
                 .get();
 
         return finalDateMaxUser;
     }
 
-    public String findMaxOnlineDateHard() {
+    public List<LocalDate> findMaxOnlineDateHard(List<UserOnline> onlineList, int maxOnline) {
 
-        // Найти дату самого большого онлайна(первый день в диапазоне, когда было одновременно онлайн самое большое кол-во людей)
-        // Более сложный вариант, это найти диапазон дат наибольшего онлайна
-        // (то есть к примеру дата начала самого большого онлайна 05.05.2023, дата завершения 10.07.2023)
-
-        Random random = new Random();
-        int i = random.nextInt(1000, 2000);
-        List<UserOnline> onlineList = Stream.generate(Main::generateUser)
-                .limit(i)
-                .sorted((o1, o2) -> countDayInterval(o2.getStartSession(), o1.getStartSession()))
-                .toList();
         List<UserOnline> onlineListAsc = onlineList
                 .stream()
                 .sorted((o1, o2) -> countDayInterval(o2.getEndSession(), o1.getEndSession()))
@@ -201,17 +170,14 @@ public class Main {
         int days = countDayInterval(startDate, endDate);
 
         SortedMap<LocalDate, Integer> sortedMap = fillHashMap(onlineList, startDate, days);
-        Integer maxUsers = Stream.of(sortedMap.values())
-                .map(e -> e.stream().max(Comparator.comparingInt(Integer::intValue))
-                .get()).findFirst()
-                .get();
+
         List<LocalDate> finalDateMaxUser = Stream.of(sortedMap.entrySet())
                 .flatMap(Collection::stream)
-                .filter(v -> v.getValue().equals(maxUsers))
+                .filter(v -> v.getValue().equals(maxOnline))
                 .map(Map.Entry::getKey)
                 .toList();
 
-        return splitListtoMaxUsersPEriod(finalDateMaxUser, maxUsers);
+        return splitListtoMaxUsersPEriod(finalDateMaxUser);
     }
 
     public static UserOnline generateUser() {
